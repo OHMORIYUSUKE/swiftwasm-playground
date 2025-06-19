@@ -233,14 +233,6 @@ docker-compose down --volumes --remove-orphans
 # mem_limit: 4g
 ```
 
-### Swift環境の問題（ローカル開発時）
-ローカル環境でSwift/SwiftWasm環境のセットアップに問題がある場合は、**Dockerの使用を強く推奨**します。
-
-```bash
-# Dockerに切り替える
-docker-compose up --build
-```
-
 ### コンパイラAPIに接続できない
 - Next.jsアプリケーションが起動していることを確認
 - ポート3000が使用可能であることを確認
@@ -255,36 +247,3 @@ docker-compose up --build
 - [SwiftWasm GitHub](https://github.com/swiftwasm/swift)
 - [WebAssembly](https://webassembly.org/)
 - [WASI](https://wasi.dev/)
-
-## 🤝 貢献
-
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add some amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
-## 📄 ライセンス
-
-このプロジェクトはMITライセンスの下で公開されています。詳細は`LICENSE`ファイルを参照してください。
-
-## 🙏 謝辞
-
-- [SwiftWasm team](https://github.com/swiftwasm) - 素晴らしいSwiftWasmプロジェクト
-- [Monaco Editor](https://microsoft.github.io/monaco-editor/) - 優秀なWebエディター
-- [Next.js](https://nextjs.org/) - React Webフレームワーク
-- [Swift.org](https://swift.org/) - Swift言語とコンパイラ
-
----
-
-**SwiftWasm SDK でSwift for WebAssemblyプログラミングを楽しんでください！** 🚀
-
-### 🚀 クイックスタート
-
-```bash
-# Dockerでビルド・起動
-docker-compose up --build
-
-# ブラウザでアクセス
-open http://localhost:3000
-```
