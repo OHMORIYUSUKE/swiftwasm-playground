@@ -1,4 +1,0 @@
-module Algorithms {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/Algorithms.build/Algorithms-Swift.h"
-    requires objc
-}

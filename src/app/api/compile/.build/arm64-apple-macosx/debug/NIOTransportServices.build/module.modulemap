@@ -1,4 +1,0 @@
-module NIOTransportServices {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/NIOTransportServices.build/NIOTransportServices-Swift.h"
-    requires objc
-}

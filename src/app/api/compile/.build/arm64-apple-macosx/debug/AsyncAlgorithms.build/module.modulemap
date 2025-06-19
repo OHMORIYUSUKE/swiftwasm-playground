@@ -1,4 +1,0 @@
-module AsyncAlgorithms {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/AsyncAlgorithms.build/AsyncAlgorithms-Swift.h"
-    requires objc
-}

@@ -1,4 +1,0 @@
-module VaporTesting {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/VaporTesting.build/VaporTesting-Swift.h"
-    requires objc
-}

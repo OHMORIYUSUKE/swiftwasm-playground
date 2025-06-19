@@ -1,4 +1,0 @@
-module SystemPackage {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/SystemPackage.build/SystemPackage-Swift.h"
-    requires objc
-}

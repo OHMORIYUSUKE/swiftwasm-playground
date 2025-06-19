@@ -1,4 +1,0 @@
-module NIO {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/NIO.build/NIO-Swift.h"
-    requires objc
-}

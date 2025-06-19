@@ -1,4 +1,0 @@
-module OrderedCollections {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/OrderedCollections.build/OrderedCollections-Swift.h"
-    requires objc
-}

@@ -1,4 +1,0 @@
-module NIOHTTPTypesHTTP1 {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/NIOHTTPTypesHTTP1.build/NIOHTTPTypesHTTP1-Swift.h"
-    requires objc
-}

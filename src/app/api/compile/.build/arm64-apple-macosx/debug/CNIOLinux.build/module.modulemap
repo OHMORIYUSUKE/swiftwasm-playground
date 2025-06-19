@@ -1,4 +1,0 @@
-module CNIOLinux {
-    umbrella header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/checkouts/swift-nio/Sources/CNIOLinux/include/CNIOLinux.h"
-    export *
-}

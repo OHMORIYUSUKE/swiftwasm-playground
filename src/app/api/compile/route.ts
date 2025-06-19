@@ -27,6 +27,26 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 200, headers: corsHeaders });
 }
 
+// SwiftWasm対応のためのコード変換関数
+function convertToSwiftWasmCompatible(code: string): string {
+  let convertedCode = code;
+  
+  // Foundation の components(separatedBy:) を標準ライブラリの split に変換
+  convertedCode = convertedCode.replace(
+    /(\w+)\.components\(separatedBy:\s*"([^"]+)"\)/g,
+    '$1.split(separator: "$2").map(String.init)'
+  );
+  
+  // Foundation import文を削除（SwiftWasmでは不要）
+  convertedCode = convertedCode.replace(/^import Foundation\s*$/gm, '');
+  
+  // その他の互換性改善
+  // NSString関連の処理があれば変換
+  convertedCode = convertedCode.replace(/NSString/g, 'String');
+  
+  return convertedCode;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { code }: CompileRequest = await request.json();
@@ -37,6 +57,9 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: corsHeaders }
       );
     }
+
+    // SwiftWasm対応版に自動変換
+    const swiftWasmCode = convertToSwiftWasmCompatible(code);
 
     // 一時ディレクトリを作成
     const tempDir = tmpdir();
@@ -67,8 +90,8 @@ let package = Package(
 
       writeFileSync(packageSwiftFile, packageContent);
       
-      // Swiftコードをファイルに書き込み
-      writeFileSync(swiftFile, code);
+      // SwiftWasm対応版のコードをファイルに書き込み
+      writeFileSync(swiftFile, swiftWasmCode);
 
       // SwiftWasm SDKでコンパイル
       let output = '';

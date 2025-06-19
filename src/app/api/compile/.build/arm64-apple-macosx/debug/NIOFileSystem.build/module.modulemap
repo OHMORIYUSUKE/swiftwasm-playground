@@ -1,4 +1,0 @@
-module NIOFileSystem {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/NIOFileSystem.build/NIOFileSystem-Swift.h"
-    requires objc
-}

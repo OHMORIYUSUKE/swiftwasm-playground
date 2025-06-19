@@ -1,4 +1,0 @@
-module CoreMetrics {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/CoreMetrics.build/CoreMetrics-Swift.h"
-    requires objc
-}

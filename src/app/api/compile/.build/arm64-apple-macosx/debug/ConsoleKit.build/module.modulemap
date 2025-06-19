@@ -1,4 +1,0 @@
-module ConsoleKit {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/ConsoleKit.build/ConsoleKit-Swift.h"
-    requires objc
-}

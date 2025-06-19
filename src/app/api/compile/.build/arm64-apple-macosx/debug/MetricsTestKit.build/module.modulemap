@@ -1,4 +1,0 @@
-module MetricsTestKit {
-    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/MetricsTestKit.build/MetricsTestKit-Swift.h"
-    requires objc
-}
