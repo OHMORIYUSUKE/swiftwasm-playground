@@ -100,8 +100,30 @@ let package = Package(
       let wasmBase64: string | undefined;
 
       try {
+        // まずインストールされているSDKを確認
+        let availableSDKs = '';
+        try {
+          availableSDKs = execSync('swift sdk list', {
+            encoding: 'utf8',
+            env: {
+              ...process.env,
+              PATH: '/opt/swift/usr/bin:' + (process.env.PATH ? ':' + process.env.PATH : ''),
+            }
+          });
+        } catch (e) {
+          console.log('SDK list check failed:', e);
+        }
+
+        // 利用可能なWasm SDKを特定
+        const wasmSDKName = availableSDKs.split('\n')
+          .find(line => line.includes('wasm') || line.includes('WASI'))
+          ?.trim() || 'swift-wasm-6.1-RELEASE-wasm32-unknown-wasi';
+
+        console.log('Available SDKs:', availableSDKs);
+        console.log('Using WASM SDK:', wasmSDKName);
+
         const result = execSync(
-          `swift build --swift-sdk 6.1-RELEASE-wasm32-unknown-wasi --package-path "${packageDir}" --scratch-path "${join(packageDir, '.build')}"`,
+          `swift build --swift-sdk "${wasmSDKName}" --package-path "${packageDir}" --scratch-path "${join(packageDir, '.build')}"`,
           {
             cwd: packageDir,
             encoding: 'utf8',

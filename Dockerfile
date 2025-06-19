@@ -41,7 +41,16 @@ RUN ldconfig && \
     swift --version || (echo "Swift installation verification failed" && exit 1)
 
 # SwiftWasm SDK をインストール
-RUN swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992"
+RUN swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992" || \
+    (echo "SwiftWasm SDK installation failed, trying alternative method..." && \
+     mkdir -p /tmp/swiftwasm-sdk && \
+     cd /tmp/swiftwasm-sdk && \
+     curl -L "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" -o sdk.zip && \
+     unzip sdk.zip && \
+     swift sdk install swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle)
+
+# SwiftWasm SDK が正しくインストールされたか確認
+RUN swift sdk list && swift sdk list | grep -i wasm || (echo "SwiftWasm SDK verification failed" && exit 1)
 
 # 作業ディレクトリを設定
 WORKDIR /app

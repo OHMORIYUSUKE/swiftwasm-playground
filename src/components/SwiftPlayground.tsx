@@ -2,33 +2,33 @@
 
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
+import { examples } from '../data/examples';
+import { compileSwiftCode, executeWasm } from '../utils/compiler';
 
-interface CompileResponse {
-  success: boolean;
-  wasmBase64?: string;
-  error?: string;
-  output?: string;
+interface DebugInfo {
+  timestamp: string;
+  checks: {
+    swiftVersion?: { status: string; output?: string; error?: string };
+    swiftSdks?: { status: string; output?: string; error?: string; hasWasmSdk?: boolean };
+    environment?: Record<string, string | undefined>;
+    wasmSdkInstalled?: { status: string; output?: string; error?: string };
+  };
 }
 
 export default function SwiftPlayground() {
-  const [code, setCode] = useState(`print("🚀 Hello from SwiftWasm!")
-print("Swiftコードが実行されています！")
-
-let message = "SwiftWasmでWebAssemblyプログラミング"
-print(message)
-
-let numbers = [1, 2, 3, 4, 5]
-let sum = numbers.reduce(0, +)
-print("配列の合計: \\(sum)")`);
+  const [code, setCode] = useState(examples[0].code);
 
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [compilerReady, setCompilerReady] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+  const [loadingDebug, setLoadingDebug] = useState(false);
 
   useEffect(() => {
     // API Routeの準備状況を確認
-    fetch('/api')
+    fetch('/api/debug')
       .then(response => {
         if (response.ok) {
           setCompilerReady(true);
@@ -63,19 +63,7 @@ print("配列の合計: \\(sum)")`);
     
     try {
       // SwiftコードをWebAssemblyにコンパイル
-      const response = await fetch('/api/compile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`コンパイラAPI routeエラー: ${response.status}`);
-      }
-
-      const result: CompileResponse = await response.json();
+      const result = await compileSwiftCode(code);
 
       if (!result.success) {
         throw new Error(`コンパイルエラー:\n${result.error || '不明なエラー'}`);
@@ -89,123 +77,13 @@ print("配列の合計: \\(sum)")`);
       const wasmBytes = Uint8Array.from(atob(result.wasmBase64), c => c.charCodeAt(0));
 
       // WebAssemblyモジュールを実行
-      await executeWasm(wasmBytes);
+      await executeWasm(wasmBytes, setOutput);
     } catch (error) {
       throw new Error(`SwiftWasm実行エラー: ${(error as Error).message}`);
     }
   };
 
-  const executeWasm = async (wasmBytes: Uint8Array) => {
-    // WASIの基本的な実装
-    const wasiImports = {
-      wasi_snapshot_preview1: {
-        fd_write: (fd: number, iovs: number, iovsLen: number, nwritten: number) => {
-          if (fd === 1 || fd === 2) { // stdout or stderr
-            const memory = (instance.exports.memory as WebAssembly.Memory);
-            const buffer = new Uint8Array(memory.buffer);
-            
-            let totalWritten = 0;
-            for (let i = 0; i < iovsLen; i++) {
-              const iovPtr = iovs + i * 8;
-              const strPtr = new DataView(memory.buffer).getUint32(iovPtr, true);
-              const strLen = new DataView(memory.buffer).getUint32(iovPtr + 4, true);
-              
-              const str = new TextDecoder().decode(buffer.slice(strPtr, strPtr + strLen));
-              setOutput(prev => prev + str);
-              totalWritten += strLen;
-            }
-            
-            // nwrittenにtotalWrittenを書き込み
-            new DataView(memory.buffer).setUint32(nwritten, totalWritten, true);
-            return 0;
-          }
-          return -1;
-        },
-        fd_close: () => 0,
-        fd_seek: () => 0,
-        proc_exit: (code: number) => {
-          if (code !== 0) {
-            setOutput(prev => prev + `\nプロセスが終了コード ${code} で終了しました\n`);
-          }
-        },
-        environ_sizes_get: (environCount: number, environBufSize: number) => {
-          const memory = (instance.exports.memory as WebAssembly.Memory);
-          new DataView(memory.buffer).setUint32(environCount, 0, true);
-          new DataView(memory.buffer).setUint32(environBufSize, 0, true);
-          return 0;
-        },
-        environ_get: () => 0,
-        args_sizes_get: (argCount: number, argBufSize: number) => {
-          const memory = (instance.exports.memory as WebAssembly.Memory);
-          new DataView(memory.buffer).setUint32(argCount, 0, true);
-          new DataView(memory.buffer).setUint32(argBufSize, 0, true);
-          return 0;
-        },
-        args_get: () => 0,
-        clock_time_get: (id: number, precision: bigint, time: number) => {
-          const memory = (instance.exports.memory as WebAssembly.Memory);
-          const now = BigInt(Date.now() * 1000000); // ナノ秒に変換
-          new DataView(memory.buffer).setBigUint64(time, now, true);
-          return 0;
-        },
-        clock_res_get: (id: number, resolution: number) => {
-          const memory = (instance.exports.memory as WebAssembly.Memory);
-          // 1ミリ秒の解像度を設定（ナノ秒単位）
-          new DataView(memory.buffer).setBigUint64(resolution, BigInt(1000000), true);
-          return 0;
-        },
-        random_get: (buf: number, bufLen: number) => {
-          const memory = (instance.exports.memory as WebAssembly.Memory);
-          const buffer = new Uint8Array(memory.buffer, buf, bufLen);
-          crypto.getRandomValues(buffer);
-          return 0;
-        },
-        fd_fdstat_get: (fd: number, stat: number) => {
-          // ファイルディスクリプタの統計情報を設定
-          const memory = (instance.exports.memory as WebAssembly.Memory);
-          const view = new DataView(memory.buffer);
-          
-          // fdstat構造体のフィールドを設定
-          view.setUint8(stat, 0); // fs_filetype: unknown
-          view.setUint16(stat + 2, 0, true); // fs_flags
-          view.setBigUint64(stat + 8, BigInt(0), true); // fs_rights_base
-          view.setBigUint64(stat + 16, BigInt(0), true); // fs_rights_inheriting
-          
-          return 0;
-        },
-        fd_prestat_get: () => 8, // EBADF: Bad file descriptor
-        fd_prestat_dir_name: () => 8, // EBADF: Bad file descriptor
-        path_open: () => 76, // ENOTCAPABLE: Insufficient rights
-        fd_read: () => 8, // EBADF: Bad file descriptor
-        fd_readdir: () => 8, // EBADF: Bad file descriptor
-        fd_filestat_get: () => 8, // EBADF: Bad file descriptor
-        path_filestat_get: () => 76, // ENOTCAPABLE: Insufficient rights
-        poll_oneoff: () => 52, // ENOSYS: Function not implemented
-        sched_yield: () => 0, // スケジューラにCPUを譲る
-        fd_sync: () => 0, // ファイル同期（何もしない）
-        fd_datasync: () => 0, // データ同期（何もしない）
-        path_create_directory: () => 76, // ENOTCAPABLE: Insufficient rights
-        path_remove_directory: () => 76, // ENOTCAPABLE: Insufficient rights
-        path_unlink_file: () => 76, // ENOTCAPABLE: Insufficient rights
-      }
-    };
 
-    let instance: WebAssembly.Instance;
-    
-    try {
-      const wasmModule = await WebAssembly.compile(wasmBytes);
-      instance = await WebAssembly.instantiate(wasmModule, wasiImports);
-      
-      // _startを実行
-      if (instance.exports._start) {
-        (instance.exports._start as (() => void))();
-      } else {
-        throw new Error('WebAssemblyモジュールに_start関数が見つかりません');
-      }
-    } catch (error) {
-      throw new Error(`WebAssembly実行エラー: ${(error as Error).message}`);
-    }
-  };
 
   const clearOutput = () => {
     setOutput('');
@@ -217,457 +95,58 @@ print("配列の合計: \\(sum)")`);
     clearOutput();
   };
 
-  const examples = [
-    {
-      name: 'Hello SwiftWasm',
-      code: `print("🚀 Hello, SwiftWasm!")
-print("Swiftがブラウザで動作中！")
-
-let message = "WebAssemblyでSwiftを実行"
-print(message)`
-    },
-    {
-      name: '配列操作',
-      code: `let fruits = ["🍎", "🍌", "🍊", "🍇", "🍓"]
-print("果物: \\(fruits)")
-
-let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-let doubled = numbers.map { $0 * 2 }
-print("元の配列: \\(numbers)")
-print("2倍: \\(doubled)")
-
-let evenNumbers = numbers.filter { $0 % 2 == 0 }
-print("偶数: \\(evenNumbers)")
-
-let sum = numbers.reduce(0, +)
-print("合計: \\(sum)")
-
-// 高階関数の組み合わせ
-let result = numbers
-    .filter { $0 > 5 }
-    .map { $0 * 3 }
-    .reduce(0, +)
-print("5より大きい数を3倍して合計: \\(result)")`
-    },
-    {
-      name: '文字列処理',
-      code: `let greeting = "こんにちは"
-let name = "SwiftWasm"
-let version = "6.1"
-
-print("\\(greeting), \\(name) \\(version)!")
-
-let message = greeting + ", " + name + "の世界へようこそ！"
-print(message)
-
-// 文字列の詳細操作
-let text = "SwiftでWebAssemblyプログラミング"
-print("文字数: \\(text.count)")
-print("大文字: \\(text.uppercased())")
-
-// 文字列の分割と結合
-let words = text.components(separatedBy: " ")
-print("単語: \\(words)")
-let reversed = words.reversed().joined(separator: " ")
-print("逆順: \\(reversed)")`
-    },
-    {
-      name: 'クラスと構造体',
-      code: `// 構造体の定義
-struct Point {
-    var x: Double
-    var y: Double
-    
-    func distance(to other: Point) -> Double {
-        let dx = x - other.x
-        let dy = y - other.y
-        return (dx * dx + dy * dy).squareRoot()
-    }
-}
-
-let point1 = Point(x: 0, y: 0)
-let point2 = Point(x: 3, y: 4)
-print("点1: (\\(point1.x), \\(point1.y))")
-print("点2: (\\(point2.x), \\(point2.y))")
-print("距離: \\(point1.distance(to: point2))")
-
-// クラスの定義
-class Person {
-    var name: String
-    var age: Int
-    
-    init(name: String, age: Int) {
-        self.name = name
-        self.age = age
-    }
-    
-    func introduce() -> String {
-        return "私は\\(name)、\\(age)歳です"
-    }
-}
-
-let person = Person(name: "太郎", age: 25)
-print(person.introduce())`
-    },
-    {
-      name: 'Optional型',
-      code: `// Optional型の基本的な使い方
-var optionalName: String? = "Swift"
-print("Optional値: \\(optionalName)")
-
-// Optional Binding
-if let name = optionalName {
-    print("名前は \\(name) です")
-} else {
-    print("名前がありません")
-}
-
-// Nil-coalescing operator
-let defaultName = optionalName ?? "無名"
-print("デフォルト名: \\(defaultName)")
-
-// Optional Chaining
-class Address {
-    var street: String?
-    var city: String?
-}
-
-class PersonWithAddress {
-    var name: String
-    var address: Address?
-    
-    init(name: String) {
-        self.name = name
-    }
-}
-
-let person = PersonWithAddress(name: "花子")
-person.address = Address()
-person.address?.street = "銀座1-1-1"
-person.address?.city = "東京"
-
-print("住所: \\(person.address?.street ?? "不明") \\(person.address?.city ?? "不明")")`
-    },
-    {
-      name: 'Enum（列挙型）',
-      code: `// 基本的な列挙型
-enum Direction {
-    case north
-    case south
-    case east
-    case west
-}
-
-let direction = Direction.north
-print("方向: \\(direction)")
-
-// Associated Values付きの列挙型
-enum Shape {
-    case circle(radius: Double)
-    case rectangle(width: Double, height: Double)
-    case triangle(base: Double, height: Double)
-}
-
-let shapes: [Shape] = [
-    .circle(radius: 5.0),
-    .rectangle(width: 10.0, height: 8.0),
-    .triangle(base: 6.0, height: 4.0)
-]
-
-for shape in shapes {
-    switch shape {
-    case .circle(let radius):
-        let area = 3.14159 * radius * radius
-        print("円の面積: \\(area)")
-    case .rectangle(let width, let height):
-        let area = width * height
-        print("四角形の面積: \\(area)")
-    case .triangle(let base, let height):
-        let area = base * height / 2
-        print("三角形の面積: \\(area)")
-    }
-}`
-    },
-    {
-      name: 'プロトコル',
-      code: `// プロトコルの定義
-protocol Drawable {
-    func draw() -> String
-}
-
-// プロトコルに準拠する構造体
-struct Circle: Drawable {
-    let radius: Double
-    
-    func draw() -> String {
-        return "半径\\(radius)の円を描画"
-    }
-}
-
-struct Rectangle: Drawable {
-    let width: Double
-    let height: Double
-    
-    func draw() -> String {
-        return "幅\\(width)×高さ\\(height)の四角形を描画"
-    }
-}
-
-// プロトコル型として使用
-let shapes: [Drawable] = [
-    Circle(radius: 5.0),
-    Rectangle(width: 10.0, height: 8.0),
-    Circle(radius: 3.0)
-]
-
-for shape in shapes {
-    print(shape.draw())
-}
-
-// プロトコル拡張
-extension Drawable {
-    func describe() -> String {
-        return "これは描画可能な図形です: \\(draw())"
-    }
-}
-
-for shape in shapes {
-    print(shape.describe())
-}`
-    },
-    {
-      name: 'ジェネリクス',
-      code: `// ジェネリック関数
-func swapValues<T>(_ a: inout T, _ b: inout T) {
-    let temp = a
-    a = b
-    b = temp
-}
-
-var x = 10
-var y = 20
-print("交換前: x=\\(x), y=\\(y)")
-swapValues(&x, &y)
-print("交換後: x=\\(x), y=\\(y)")
-
-var str1 = "Hello"
-var str2 = "World"
-print("交換前: str1=\\(str1), str2=\\(str2)")
-swapValues(&str1, &str2)
-print("交換後: str1=\\(str1), str2=\\(str2)")
-
-// ジェネリック型
-struct Stack<Element> {
-    private var items: [Element] = []
-    
-    mutating func push(_ item: Element) {
-        items.append(item)
-    }
-    
-    mutating func pop() -> Element? {
-        return items.isEmpty ? nil : items.removeLast()
-    }
-    
-    func peek() -> Element? {
-        return items.last
-    }
-    
-    var count: Int {
-        return items.count
-    }
-}
-
-var intStack = Stack<Int>()
-intStack.push(1)
-intStack.push(2)
-intStack.push(3)
-print("スタック要素数: \\(intStack.count)")
-print("トップ要素: \\(intStack.peek() ?? 0)")
-print("ポップ: \\(intStack.pop() ?? 0)")`
-    },
-    {
-      name: 'クロージャー',
-      code: `// 基本的なクロージャー
-let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-// map: 各要素を変換
-let doubled = numbers.map { $0 * 2 }
-print("2倍: \\(doubled)")
-
-// filter: 条件に合う要素のみ抽出
-let evenNumbers = numbers.filter { $0 % 2 == 0 }
-print("偶数: \\(evenNumbers)")
-
-// reduce: 要素を集約
-let sum = numbers.reduce(0) { $0 + $1 }
-print("合計: \\(sum)")
-
-// sorted: ソート
-let reversed = numbers.sorted { $0 > $1 }
-print("降順: \\(reversed)")
-
-// 複雑なクロージャーの例
-let words = ["Swift", "WebAssembly", "プログラミング", "コンパイル"]
-let processedWords = words
-    .filter { $0.count > 4 }
-    .map { $0.uppercased() }
-    .sorted()
-
-print("処理済み単語: \\(processedWords)")
-
-// trailing closure syntax
-func performOperation(_ a: Int, _ b: Int, operation: (Int, Int) -> Int) -> Int {
-    return operation(a, b)
-}
-
-let result = performOperation(10, 5) { $0 + $1 }
-print("演算結果: \\(result)")`
-    },
-    {
-      name: 'エラーハンドリング',
-      code: `// エラー型の定義
-enum CalculationError: Error {
-    case divisionByZero
-    case negativeSquareRoot
-}
-
-// エラーをthrowする関数
-func divide(_ a: Double, by b: Double) throws -> Double {
-    guard b != 0 else {
-        throw CalculationError.divisionByZero
-    }
-    return a / b
-}
-
-func squareRoot(of number: Double) throws -> Double {
-    guard number >= 0 else {
-        throw CalculationError.negativeSquareRoot
-    }
-    return number.squareRoot()
-}
-
-// do-catch文でエラーハンドリング
-do {
-    let result1 = try divide(10, by: 2)
-    print("10 ÷ 2 = \\(result1)")
-    
-    let result2 = try squareRoot(of: 16)
-    print("√16 = \\(result2)")
-    
-    // エラーが発生するケース
-    let result3 = try divide(10, by: 0)
-    print("これは表示されません")
-} catch CalculationError.divisionByZero {
-    print("エラー: ゼロで割ることはできません")
-} catch CalculationError.negativeSquareRoot {
-    print("エラー: 負の数の平方根は計算できません")
-} catch {
-    print("未知のエラー: \\(error)")
-}
-
-// try?とtry!の使用例
-let safeResult = try? divide(8, by: 2)
-print("安全な結果: \\(safeResult ?? 0)")`
-    },
-    {
-      name: '関数型プログラミング',
-      code: `// 高階関数の組み合わせ
-let numbers = Array(1...20)
-
-// 複雑な処理のチェーン
-let result = numbers
-    .filter { $0 % 2 == 1 }        // 奇数のみ
-    .map { $0 * $0 }               // 二乗
-    .filter { $0 < 100 }           // 100未満
-    .reduce(0, +)                  // 合計
-
-print("1-20の奇数の二乗で100未満の合計: \\(result)")
-
-// カスタム高階関数
-func compose<A, B, C>(_ f: @escaping (B) -> C, _ g: @escaping (A) -> B) -> (A) -> C {
-    return { a in f(g(a)) }
-}
-
-let addOne = { (x: Int) -> Int in x + 1 }
-let multiplyByTwo = { (x: Int) -> Int in x * 2 }
-
-let addOneThenMultiplyByTwo = compose(multiplyByTwo, addOne)
-print("5に1足して2倍: \\(addOneThenMultiplyByTwo(5))")
-
-// flatMap の使用例
-let nestedArrays = [[1, 2], [3, 4], [5, 6]]
-let flattened = nestedArrays.flatMap { $0 }
-print("平坦化: \\(flattened)")
-
-// compactMap の使用例（nilを除去）
-let strings = ["1", "2", "hello", "4", "world"]
-let integers = strings.compactMap { Int($0) }
-print("数値のみ: \\(integers)")`
-    },
-    {
-      name: 'アルゴリズムとデータ構造',
-      code: `// バブルソート
-func bubbleSort(_ array: [Int]) -> [Int] {
-    var result = array
-    let n = result.count
-    
-    for i in 0..<n {
-        for j in 0..<(n - i - 1) {
-            if result[j] > result[j + 1] {
-                let temp = result[j]
-                result[j] = result[j + 1]
-                result[j + 1] = temp
-            }
+  const fetchDebugInfo = async () => {
+    setLoadingDebug(true);
+    try {
+      const response = await fetch('/api/debug');
+      const data = await response.json();
+      setDebugInfo(data);
+    } catch (error) {
+      console.error('デバッグ情報の取得に失敗しました:', error);
+      setDebugInfo({
+        timestamp: new Date().toISOString(),
+        checks: {
+          swiftVersion: { status: 'error', error: 'デバッグ情報の取得に失敗' }
         }
+      });
+    } finally {
+      setLoadingDebug(false);
     }
-    return result
-}
+  };
 
-let unsorted = [64, 34, 25, 12, 22, 11, 90]
-print("ソート前: \\(unsorted)")
-let sorted = bubbleSort(unsorted)
-print("ソート後: \\(sorted)")
-
-// フィボナッチ数列（再帰版）
-func fibonacci(_ n: Int) -> Int {
-    if n <= 1 {
-        return n
+  const toggleDebugInfo = async () => {
+    if (!debugInfo) {
+      await fetchDebugInfo();
     }
-    return fibonacci(n - 1) + fibonacci(n - 2)
-}
-
-print("フィボナッチ数列:")
-for i in 0...10 {
-    print("F(\\(i)) = \\(fibonacci(i))")
-}
-
-// 最大公約数（ユークリッドの互除法）
-func gcd(_ a: Int, _ b: Int) -> Int {
-    if b == 0 {
-        return a
-    }
-    return gcd(b, a % b)
-}
-
-let num1 = 48
-let num2 = 18
-print("\\(num1)と\\(num2)の最大公約数: \\(gcd(num1, num2))")`
-    }
-  ];
+    setShowDebugInfo(true);
+  };
 
   return (
     <div className="h-screen bg-white flex flex-col">
       <div className="border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-800">
               🚀 Real SwiftWasm Playground
             </h2>
-            <p className="text-sm text-gray-600">
-              {!compilerReady ? 
-                '❌ コンパイラAPI route未接続' :
-                '✅ SwiftWasmコンパイラ準備完了'}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-gray-600">
+                {!compilerReady ? 
+                  '❌ コンパイラAPI route未接続' :
+                  '✅ SwiftWasmコンパイラ準備完了'}
+              </p>
+              {compilerReady && (
+                <button
+                  onClick={toggleDebugInfo}
+                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  disabled={loadingDebug}
+                >
+                  {loadingDebug ? '🔄' : '🔍'} デバッグ情報
+                </button>
+              )}
+            </div>
+            
+
           </div>
           <div className="space-x-2">
             <button
@@ -714,6 +193,7 @@ print("\\(num1)と\\(num2)の最大公約数: \\(gcd(num1, num2))")`
               fontSize: 14,
               wordWrap: 'on',
               automaticLayout: true,
+              scrollBeyondLastLine: false,
             }}
           />
         </div>
@@ -753,6 +233,89 @@ print("\\(num1)と\\(num2)の最大公約数: \\(gcd(num1, num2))")`
           <a href="https://github.com/swiftwasm/swift" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">SwiftWasm</a>コンパイラ（Swift 6.1）でWebAssemblyにコンパイル・実行
         </div>
       </div>
+
+      {/* デバッグ情報ポップアップ */}
+      {showDebugInfo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-800">🔍 SwiftWasm デバッグ情報</h3>
+              <button
+                onClick={() => setShowDebugInfo(false)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {debugInfo ? (
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-500">
+                    最終更新: {new Date(debugInfo.timestamp).toLocaleString()}
+                  </div>
+                  
+                  {debugInfo.checks.swiftVersion && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h4 className="font-medium text-gray-800 mb-2">Swift バージョン</h4>
+                      <div className={`text-sm ${debugInfo.checks.swiftVersion.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                        {debugInfo.checks.swiftVersion.status === 'success' 
+                          ? debugInfo.checks.swiftVersion.output 
+                          : `❌ ${debugInfo.checks.swiftVersion.error}`}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {debugInfo.checks.swiftSdks && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h4 className="font-medium text-gray-800 mb-2">Swift SDKs for WebAssembly</h4>
+                      <div className={`text-sm ${debugInfo.checks.swiftSdks.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                        {debugInfo.checks.swiftSdks.status === 'success' ? (
+                          <div>
+                            <div className="mb-1">
+                              {debugInfo.checks.swiftSdks.hasWasmSdk ? '✅' : '❌'} WASM SDK利用可能
+                            </div>
+                            <div className="text-xs text-gray-600 font-mono whitespace-pre-wrap">
+                              {debugInfo.checks.swiftSdks.output}
+                            </div>
+                          </div>
+                        ) : (
+                          `❌ ${debugInfo.checks.swiftSdks.error}`
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+
+                  
+                  {debugInfo.checks.environment && (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h4 className="font-medium text-gray-800 mb-2">実行環境</h4>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div><strong>プラットフォーム:</strong> {debugInfo.checks.environment.platform}</div>
+                        <div><strong>アーキテクチャ:</strong> {debugInfo.checks.environment.arch}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">デバッグ情報を読み込み中...</div>
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t p-4 bg-gray-50">
+              <button
+                onClick={() => setShowDebugInfo(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
