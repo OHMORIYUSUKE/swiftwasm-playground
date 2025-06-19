@@ -1,0 +1,4 @@
+module ServiceLifecycleTestKit {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/ServiceLifecycleTestKit.build/ServiceLifecycleTestKit-Swift.h"
+    requires objc
+}

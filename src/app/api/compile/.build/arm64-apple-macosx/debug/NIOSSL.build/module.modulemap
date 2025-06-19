@@ -1,0 +1,4 @@
+module NIOSSL {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/NIOSSL.build/NIOSSL-Swift.h"
+    requires objc
+}

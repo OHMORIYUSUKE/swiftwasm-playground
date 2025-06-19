@@ -1,0 +1,4 @@
+module AsyncKit {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/AsyncKit.build/AsyncKit-Swift.h"
+    requires objc
+}

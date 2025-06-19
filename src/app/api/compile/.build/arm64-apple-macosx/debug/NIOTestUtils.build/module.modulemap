@@ -1,0 +1,4 @@
+module NIOTestUtils {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/NIOTestUtils.build/NIOTestUtils-Swift.h"
+    requires objc
+}

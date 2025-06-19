@@ -1,0 +1,4 @@
+module Numerics {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/Numerics.build/Numerics-Swift.h"
+    requires objc
+}

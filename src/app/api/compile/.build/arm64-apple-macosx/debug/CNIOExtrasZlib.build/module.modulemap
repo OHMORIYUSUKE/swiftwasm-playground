@@ -1,0 +1,4 @@
+module CNIOExtrasZlib {
+    umbrella header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/checkouts/swift-nio-extras/Sources/CNIOExtrasZlib/include/CNIOExtrasZlib.h"
+    export *
+}

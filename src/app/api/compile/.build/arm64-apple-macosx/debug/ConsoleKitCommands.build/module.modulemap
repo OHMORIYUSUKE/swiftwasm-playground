@@ -1,0 +1,4 @@
+module ConsoleKitCommands {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/ConsoleKitCommands.build/ConsoleKitCommands-Swift.h"
+    requires objc
+}

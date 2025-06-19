@@ -1,0 +1,4 @@
+module Tracing {
+    header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/arm64-apple-macosx/debug/Tracing.build/Tracing-Swift.h"
+    requires objc
+}

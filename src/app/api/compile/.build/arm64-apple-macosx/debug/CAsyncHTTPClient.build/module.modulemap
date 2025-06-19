@@ -1,0 +1,4 @@
+module CAsyncHTTPClient {
+    umbrella header "/Users/y_omori/project/swift-wasm/swiftwasm-playground/swift-backend/.build/checkouts/async-http-client/Sources/CAsyncHTTPClient/include/CAsyncHTTPClient.h"
+    export *
+}
