@@ -1,37 +1,40 @@
 # 🚀 Real SwiftWasm Playground
 
-[SwiftWasm.org](https://swiftwasm.org/)のようなSwiftWasmコンパイラを使用したオンラインプレイグラウンドです。
+ブラウザでSwiftコードをリアルタイムでWebAssemblyにコンパイル・実行できるオンラインプレイグラウンドです。SwiftWasm SDK 6.1を使用して、Swift 6.1のコードをWebAssemblyに変換し、ブラウザ内のカスタムWASI実装で実行します。
 
 ## ✨ 特徴
 
-- **SwiftWasmコンパイラ（Swift 6.1）** を使用したリアルタイムコンパイル
+- **SwiftWasm SDK 6.1** を使用したリアルタイムコンパイル
 - **ブラウザ内WASI実行環境** でWebAssemblyモジュールを直接実行
-- **モダンなUI** SwiftWasm.orgにインスパイアされた美しいインターフェース
-- **サンプルコード** Swift標準ライブラリの様々な機能を試せる例
+- **Monaco Editor** による高機能なSwiftコードエディタ
+- **豊富なサンプルコード** Swift標準ライブラリの様々な機能を試せる例
 - **リアルタイム出力** コンパイルと実行の状況をリアルタイムで表示
+- **Docker対応** マルチアーキテクチャ（ARM64/x86_64）対応の環境
 
 ## 🏗️ アーキテクチャ
 
 ```
 ┌─────────────────┐    HTTP API    ┌─────────────────┐
-│   Next.js       │ ─────────────► │   Vapor API     │
-│   Frontend      │                │   Server        │
+│   Next.js       │ ─────────────► │   Next.js       │
+│   Frontend      │                │   API Routes    │
 │                 │ ◄───────────── │                 │
 │ - Monaco Editor │   WebAssembly  │ - SwiftWasm     │
 │ - WASI Runtime  │   Binary       │   Compiler      │
-│ - UI/UX         │                │ - Swift 6.1     │
+│ - TypeScript    │                │ - Swift 6.1     │
 └─────────────────┘                └─────────────────┘
 ```
 
-### フロントエンド (Next.js + TypeScript)
-- Monacoエディターを使用したSwiftコード編集
-- ブラウザ内WASIランタイムでWebAssembly実行
-- レスポンシブデザインとモダンなUI
+### フロントエンド
+- **Monaco Editor**: VS Codeと同じエディタエンジンによるSwiftコード編集
+- **カスタムWASI実装**: WebAssembly System Interfaceの独自実装
+- **TypeScript**: 型安全性を確保したReactコンポーネント
+- **Tailwind CSS**: モダンでレスポンシブなUI
 
-### バックエンド (Vapor + Swift)
-- SwiftWasmコンパイラを使用したリアルタイムコンパイル
-- 一時ディレクトリでの安全なコンパイル環境
-- Base64エンコードでのWebAssemblyバイナリ配信
+### バックエンド
+- **Next.js API Routes**: サーバーサイドでのSwiftコンパイル処理
+- **SwiftWasm SDK**: Swift 6.1コードをWebAssemblyに変換
+- **Docker**: 隔離された安全なコンパイル環境
+- **一時ファイル管理**: セキュアな一時ディレクトリでのパッケージ処理
 
 ## 📋 前提条件
 
@@ -45,8 +48,6 @@
 - Docker（推奨）
 
 ## 🚀 セットアップ
-
-### 方法1: Docker（推奨）
 
 #### 前提条件
 - Docker
@@ -107,49 +108,8 @@ DOCKER_DEFAULT_PLATFORM=linux/amd64 docker-compose up --build
 http://localhost:3000
 ```
 
-### 方法2: ローカル環境
-
-#### 1. Swift環境のセットアップ
-
-##### swiftlyのインストール（macOS）
-```bash
-curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
-installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
-~/.swiftly/bin/swiftly init --quiet-shell-followup
-. ~/.swiftly/env.sh
-hash -r
-```
-
-##### Swift 6.1の設定
-```bash
-# プロジェクトディレクトリに移動
-cd swiftwasm-playground
-~/.swiftly/bin/swiftly use 6.1.2
-export PATH="$HOME/.swiftly/bin:$PATH"
-```
-
-#### 2. SwiftWasm SDKのインストール
-```bash
-swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992"
-
-# インストール確認
-swift sdk list
-# 出力: 6.1-RELEASE-wasm32-unknown-wasi
-```
-
-#### 3. Wasmtimeのインストール
-```bash
-curl https://wasmtime.dev/install.sh -sSf | bash
-```
-
-#### 4. プロジェクトの依存関係のインストール
-```bash
-npm install
-```
-
 ## 🏃‍♂️ 実行
 
-### Docker使用時
 ```bash
 # 開発モードで起動
 docker-compose up
@@ -158,27 +118,23 @@ docker-compose up
 docker-compose down
 ```
 
-### ローカル環境使用時
-```bash
-# 開発サーバーの起動
-npm run dev
-```
-
 ### ブラウザでアクセス
 ```
 http://localhost:3000
 ```
 
-## 🧪 テスト
+## 🧪 動作確認
 
-### SwiftWasmコンパイラのテスト
+### Dockerでの動作確認
 ```bash
-# テストプロジェクトでコンパイル確認
-mkdir test-swiftwasm && cd test-swiftwasm
-swift package init --type executable
-export PATH="$HOME/.swiftly/bin:$PATH"
-swift build --swift-sdk 6.1-RELEASE-wasm32-unknown-wasi
-wasmtime .build/wasm32-unknown-wasi/debug/test-swiftwasm.wasm
+# アプリケーションの起動
+docker-compose up --build
+
+# ブラウザでテスト
+open http://localhost:3000
+
+# コンテナ内のログ確認
+docker-compose logs app
 ```
 
 ## 📚 使用方法
@@ -216,18 +172,29 @@ print("合計: \(sum)")
 ## 🔧 技術詳細
 
 ### コンパイルプロセス
-1. フロントエンドからSwiftコードをAPIサーバーに送信
-2. サーバーで一時ディレクトリにSwiftPackageプロジェクトを作成
-3. SwiftWasm SDKを使用してWebAssemblyにコンパイル
+1. フロントエンドからSwiftコードをNext.js API Routeに送信
+2. サーバーサイドで一時ディレクトリにSwiftパッケージプロジェクトを作成
+3. SwiftWasm SDK 6.1を使用してWebAssemblyにコンパイル
 4. 生成されたWASMバイナリをBase64エンコードしてレスポンス
-5. フロントエンドでWASMバイナリをデコードしてWASI環境で実行
+5. フロントエンドでWASMバイナリをデコードしてカスタムWASI環境で実行
 
-### WASI実装
+### カスタムWASI実装
+ブラウザでWebAssemblyを実行するために、以下のWASIシステムコールを実装：
+
 - `fd_write`: 標準出力/エラー出力の処理
 - `proc_exit`: プロセス終了の処理
 - `environ_*`: 環境変数の処理
 - `args_*`: コマンドライン引数の処理
-- `random_get`: 乱数生成
+- `clock_time_get`: 時刻取得
+- `random_get`: 暗号学的安全な乱数生成
+- `fd_fdstat_get`: ファイルディスクリプタ統計情報
+
+### 技術スタック
+- **フロントエンド**: Next.js 15, React 19, TypeScript, Monaco Editor, Tailwind CSS
+- **バックエンド**: Next.js API Routes, Node.js
+- **コンパイラ**: SwiftWasm SDK 6.1, Swift 6.1
+- **実行環境**: WebAssembly, カスタムWASI実装
+- **インフラ**: Docker, Docker Compose（マルチアーキテクチャ対応）
 
 ## 🚨 トラブルシューティング
 
@@ -266,28 +233,20 @@ docker-compose down --volumes --remove-orphans
 # mem_limit: 4g
 ```
 
-### SwiftWasmコンパイラが見つからない（ローカル環境）
+### Swift環境の問題（ローカル開発時）
+ローカル環境でSwift/SwiftWasm環境のセットアップに問題がある場合は、**Dockerの使用を強く推奨**します。
+
 ```bash
-# PATHの確認
-echo $PATH
-# swiftlyの再設定
-. ~/.swiftly/env.sh
-export PATH="$HOME/.swiftly/bin:$PATH"
+# Dockerに切り替える
+docker-compose up --build
 ```
 
-### SDKが見つからない（ローカル環境）
-```bash
-# SDKリストの確認
-swift sdk list
-# 再インストール
-swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992"
-```
-
-### コンパイラサーバーに接続できない
-- APIサーバーが起動していることを確認
+### コンパイラAPIに接続できない
+- Next.jsアプリケーションが起動していることを確認
 - ポート3000が使用可能であることを確認
-- CORSエラーの場合はAPIサーバーのCORS設定を確認
+- API Routes（`/api/compile`）にアクセス可能であることを確認
 - Dockerの場合は `docker-compose logs app` でログを確認
+- ブラウザの開発者ツールでネットワークエラーをチェック
 
 ## 📖 参考資料
 
@@ -312,23 +271,20 @@ swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wa
 ## 🙏 謝辞
 
 - [SwiftWasm team](https://github.com/swiftwasm) - 素晴らしいSwiftWasmプロジェクト
-- [Vapor](https://vapor.codes/) - 高速なSwift Webフレームワーク  
 - [Monaco Editor](https://microsoft.github.io/monaco-editor/) - 優秀なWebエディター
 - [Next.js](https://nextjs.org/) - React Webフレームワーク
+- [Swift.org](https://swift.org/) - Swift言語とコンパイラ
 
 ---
 
-**SwiftWasmコンパイラでSwift for WebAssemblyプログラミングを楽しんでください！** 🚀
+**SwiftWasm SDK でSwift for WebAssemblyプログラミングを楽しんでください！** 🚀
 
-```sh
-# 1. バックエンドAPI起動
-cd swift-backend
-export PATH="$HOME/.swiftly/bin:$PATH"
-swift run swift-backend
+### 🚀 クイックスタート
 
-# 2. フロントエンド起動（新しいターミナル）
-npm run dev
+```bash
+# Dockerでビルド・起動
+docker-compose up --build
 
-# 3. ブラウザでアクセス
+# ブラウザでアクセス
 open http://localhost:3000
 ```
