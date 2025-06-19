@@ -20,7 +20,7 @@ interface CompileResponse {
   success: boolean;
   output: string;
   error?: string;
-  wasmBase64?: string;
+  wasmId?: string;
 }
 
 export async function OPTIONS() {
@@ -97,7 +97,7 @@ let package = Package(
       let output = '';
       let errorOutput = '';
       let success = false;
-      let wasmBase64: string | undefined;
+      let wasmId: string | undefined;
 
       try {
         // まずインストールされているSDKを確認
@@ -141,8 +141,13 @@ let package = Package(
         const wasmFile = join(packageDir, '.build/wasm32-unknown-wasi/debug/main.wasm');
         
         if (existsSync(wasmFile)) {
+          // WASMファイルを一時ディレクトリにコピーして、IDでアクセス可能にする
+          const wasmId_generated = randomUUID();
+          const tempWasmFile = join(tempDir, `wasm_${wasmId_generated}.wasm`);
           const wasmData = readFileSync(wasmFile);
-          wasmBase64 = wasmData.toString('base64');
+          writeFileSync(tempWasmFile, wasmData);
+          
+          wasmId = wasmId_generated;
           success = true;
         }
         
@@ -170,7 +175,7 @@ let package = Package(
         success,
         output: success ? 'コンパイルが成功しました' : output,
         error: success ? undefined : (errorOutput || 'コンパイルエラーが発生しました'),
-        wasmBase64
+        wasmId
       };
 
       return NextResponse.json(response, { headers: corsHeaders });

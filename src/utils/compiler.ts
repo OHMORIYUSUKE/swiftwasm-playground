@@ -17,14 +17,23 @@ export async function compileSwiftCode(code: string): Promise<CompileResponse> {
   return await response.json();
 }
 
-export async function executeWasm(
-  wasmBytes: Uint8Array,
+export async function executeWasmById(
+  wasmId: string,
   setOutput: (updater: (prev: string) => string) => void
 ): Promise<void> {
-  const wasiImportsHelper = createWasiImports(setOutput);
-  const { setInstance, ...wasiImports } = wasiImportsHelper;
-  
   try {
+    // WASMバイナリを直接取得
+    const response = await fetch(`/api/wasm/${wasmId}`);
+    
+    if (!response.ok) {
+      throw new Error(`WASMファイルの取得に失敗しました: ${response.status}`);
+    }
+    
+    const wasmBytes = new Uint8Array(await response.arrayBuffer());
+    
+    const wasiImportsHelper = createWasiImports(setOutput);
+    const { setInstance, ...wasiImports } = wasiImportsHelper;
+    
     const wasmModule = await WebAssembly.compile(wasmBytes);
     const instance = await WebAssembly.instantiate(wasmModule, wasiImports);
     

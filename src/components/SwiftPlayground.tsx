@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
 import { examples } from '../data/examples';
-import { compileSwiftCode, executeWasm } from '../utils/compiler';
+import { compileSwiftCode, executeWasmById } from '../utils/compiler';
 
 interface DebugInfo {
   timestamp: string;
@@ -69,15 +69,12 @@ export default function SwiftPlayground() {
         throw new Error(`コンパイルエラー:\n${result.error || '不明なエラー'}`);
       }
 
-      if (!result.wasmBase64) {
-        throw new Error('WebAssemblyバイナリが生成されませんでした');
+      if (!result.wasmId) {
+        throw new Error('WebAssemblyバイナリIDが生成されませんでした');
       }
 
-      // Base64からWebAssemblyバイナリをデコード
-      const wasmBytes = Uint8Array.from(atob(result.wasmBase64), c => c.charCodeAt(0));
-
       // WebAssemblyモジュールを実行
-      await executeWasm(wasmBytes, setOutput);
+      await executeWasmById(result.wasmId, setOutput);
     } catch (error) {
       throw new Error(`SwiftWasm実行エラー: ${(error as Error).message}`);
     }

@@ -1,6 +1,6 @@
 export interface CompileResponse {
   success: boolean;
-  wasmBase64?: string;
+  wasmId?: string;
   error?: string;
   output?: string;
 } 
