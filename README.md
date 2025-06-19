@@ -46,9 +46,72 @@
 
 ## 🚀 セットアップ
 
-### 1. Swift環境のセットアップ
+### 方法1: Docker（推奨）
 
-#### swiftlyのインストール（macOS）
+#### 前提条件
+- Docker
+- Docker Compose
+
+#### 実行手順
+```bash
+# リポジトリをクローン
+git clone <repository-url>
+cd swiftwasm-playground
+
+# Dockerコンテナをビルドして起動
+docker-compose up --build
+
+# バックグラウンドで実行したい場合
+docker-compose up -d --build
+```
+
+#### M1/M2 Mac (ARM64) ユーザー向け特別設定
+
+Apple Silicon (M1/M2) Macをお使いの場合、以下の方法で実行してください：
+
+**方法1: 環境変数設定（推奨）**
+```bash
+# M1/M2 Mac用（ARM64）
+export DOCKER_DEFAULT_PLATFORM=linux/arm64
+docker-compose up --build
+
+# Intel Mac/PC用（x86_64）
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+docker-compose up --build
+```
+
+**方法2: .envファイルを作成**
+```bash
+# .env ファイルを作成
+echo "DOCKER_DEFAULT_PLATFORM=linux/arm64" > .env
+docker-compose up --build
+```
+
+**方法3: 一時的な環境変数設定**
+```bash
+# M1/M2 Mac用（一回限り）
+DOCKER_DEFAULT_PLATFORM=linux/arm64 docker-compose up --build
+
+# Intel Mac/PC用（一回限り）
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker-compose up --build
+```
+
+**技術詳細:**
+- 公式のSwift 6.1オープンソース版を使用
+- SwiftWasm SDK 6.1を自動インストール
+- ARM64/x86_64両対応のマルチアーキテクチャビルド
+- 新しいSDKベースのアプローチにより環境構築が簡素化
+
+#### ブラウザでアクセス
+```
+http://localhost:3000
+```
+
+### 方法2: ローカル環境
+
+#### 1. Swift環境のセットアップ
+
+##### swiftlyのインストール（macOS）
 ```bash
 curl -O https://download.swift.org/swiftly/darwin/swiftly.pkg
 installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
@@ -57,7 +120,7 @@ installer -pkg swiftly.pkg -target CurrentUserHomeDirectory
 hash -r
 ```
 
-#### Swift 6.1の設定
+##### Swift 6.1の設定
 ```bash
 # プロジェクトディレクトリに移動
 cd swiftwasm-playground
@@ -65,7 +128,7 @@ cd swiftwasm-playground
 export PATH="$HOME/.swiftly/bin:$PATH"
 ```
 
-### 2. SwiftWasm SDKのインストール
+#### 2. SwiftWasm SDKのインストール
 ```bash
 swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wasm-6.1-RELEASE/swift-wasm-6.1-RELEASE-wasm32-unknown-wasi.artifactbundle.zip" --checksum "7550b4c77a55f4b637c376f5d192f297fe185607003a6212ad608276928db992"
 
@@ -74,40 +137,34 @@ swift sdk list
 # 出力: 6.1-RELEASE-wasm32-unknown-wasi
 ```
 
-### 3. Wasmtimeのインストール
+#### 3. Wasmtimeのインストール
 ```bash
 curl https://wasmtime.dev/install.sh -sSf | bash
 ```
 
-### 4. プロジェクトの依存関係のインストール
-
-#### フロントエンド
+#### 4. プロジェクトの依存関係のインストール
 ```bash
 npm install
 ```
 
-#### バックエンド
-```bash
-cd swift-backend
-# Vaporの依存関係は初回実行時に自動インストールされます
-```
-
 ## 🏃‍♂️ 実行
 
-### 1. バックエンドAPIサーバーの起動
+### Docker使用時
 ```bash
-cd swift-backend
-export PATH="$HOME/.swiftly/bin:$PATH"
-swift run swift-backend
+# 開発モードで起動
+docker-compose up
+
+# 停止
+docker-compose down
 ```
 
-### 2. フロントエンド開発サーバーの起動
+### ローカル環境使用時
 ```bash
-# 新しいターミナルウィンドウで
+# 開発サーバーの起動
 npm run dev
 ```
 
-### 3. ブラウザでアクセス
+### ブラウザでアクセス
 ```
 http://localhost:3000
 ```
@@ -174,7 +231,42 @@ print("合計: \(sum)")
 
 ## 🚨 トラブルシューティング
 
-### SwiftWasmコンパイラが見つからない
+### Docker関連の問題
+
+#### M1/M2 Mac でのアーキテクチャエラー
+```bash
+# エラー: Dynamic loader not found: /lib64/ld-linux-x86-64.so.2
+# 解決策1: ARM64プラットフォームを指定
+docker-compose up --build --platform linux/arm64
+
+# 解決策2: 環境変数を設定
+export DOCKER_DEFAULT_PLATFORM=linux/arm64
+docker-compose up --build
+
+# 解決策3: x86_64で実行（Rosetta 2使用）
+docker-compose up --build --platform linux/amd64
+```
+
+#### Dockerビルドが失敗する
+```bash
+# キャッシュをクリアして再構築
+docker-compose build --no-cache
+
+# 古いイメージ・コンテナを削除
+docker system prune -a
+docker-compose down --volumes --remove-orphans
+```
+
+#### メモリ不足エラー
+```bash
+# Docker Desktop のリソース制限を増加
+# Settings > Resources > Advanced で Memory を 4GB 以上に設定
+
+# または docker-compose.yml で制限を調整
+# mem_limit: 4g
+```
+
+### SwiftWasmコンパイラが見つからない（ローカル環境）
 ```bash
 # PATHの確認
 echo $PATH
@@ -183,7 +275,7 @@ echo $PATH
 export PATH="$HOME/.swiftly/bin:$PATH"
 ```
 
-### SDKが見つからない
+### SDKが見つからない（ローカル環境）
 ```bash
 # SDKリストの確認
 swift sdk list
@@ -193,8 +285,9 @@ swift sdk install "https://github.com/swiftwasm/swift/releases/download/swift-wa
 
 ### コンパイラサーバーに接続できない
 - APIサーバーが起動していることを確認
-- ポート8080が使用可能であることを確認
+- ポート3000が使用可能であることを確認
 - CORSエラーの場合はAPIサーバーのCORS設定を確認
+- Dockerの場合は `docker-compose logs app` でログを確認
 
 ## 📖 参考資料
 

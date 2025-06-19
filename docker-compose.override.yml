@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+    # 開発用の追加設定
+    command: npm run dev
+    stdin_open: true
+    tty: true
+    # M1/M2 Mac用の場合は以下の環境変数を使用:
+    # export DOCKER_DEFAULT_PLATFORM=linux/arm64
+    # Intel Mac/PC用の場合は以下の環境変数を使用:
+    # export DOCKER_DEFAULT_PLATFORM=linux/amd64 

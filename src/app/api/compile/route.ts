@@ -101,11 +101,15 @@ let package = Package(
 
       try {
         const result = execSync(
-          `swift build --swift-sdk wasm32-unknown-wasi --package-path "${packageDir}" --scratch-path "${join(packageDir, '.build')}"`,
+          `swift build --swift-sdk 6.1-RELEASE-wasm32-unknown-wasi --package-path "${packageDir}" --scratch-path "${join(packageDir, '.build')}"`,
           {
             cwd: packageDir,
             encoding: 'utf8',
             timeout: 30000, // 30秒のタイムアウト
+            env: {
+              ...process.env,
+              PATH: '/opt/swift/usr/bin:' + (process.env.PATH ? ':' + process.env.PATH : ''),
+            }
           }
         );
         

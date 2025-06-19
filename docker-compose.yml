@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - NODE_OPTIONS=--max-old-space-size=2048
+    restart: unless-stopped
+    tmpfs:
+      - /tmp:exec,noatime,size=200m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 3g
+    shm_size: 512m
+    networks:
+      - swiftwasm-network
+
+networks:
+  swiftwasm-network:
+    driver: bridge 

@@ -59,7 +59,7 @@ print("配列の合計: \\(sum)")`);
   };
 
   const compileAndRunSwift = async () => {
-    setOutput('🔄 SwiftWasmコンパイラでコンパイル中...\n\n');
+    setOutput('');
     
     try {
       // SwiftコードをWebAssemblyにコンパイル
@@ -85,15 +85,11 @@ print("配列の合計: \\(sum)")`);
         throw new Error('WebAssemblyバイナリが生成されませんでした');
       }
 
-      setOutput(prev => prev + '✅ コンパイル完了\n🔄 WebAssemblyモジュールを実行中...\n\n');
-
       // Base64からWebAssemblyバイナリをデコード
       const wasmBytes = Uint8Array.from(atob(result.wasmBase64), c => c.charCodeAt(0));
 
       // WebAssemblyモジュールを実行
       await executeWasm(wasmBytes);
-
-      setOutput(prev => prev + '\n✅ 実行完了\n');
     } catch (error) {
       throw new Error(`SwiftWasm実行エラー: ${(error as Error).message}`);
     }
