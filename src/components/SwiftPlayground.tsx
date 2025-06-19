@@ -35,7 +35,7 @@ export default function SwiftPlayground() {
         }
       })
       .catch(() => {
-        setError('SwiftWasmコンパイラAPI routeに接続できません。');
+        setError('SwiftWasmコンパイラAPIに接続できません');
       });
   }, []);
 
