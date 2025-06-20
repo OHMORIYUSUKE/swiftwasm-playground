@@ -1,5 +1,7 @@
 # 🚀 SwiftWasm Playground
 
+![](./docs/images/top.png)
+
 ブラウザでSwiftコードをリアルタイムでWebAssemblyにコンパイル・実行できるオンラインプレイグラウンドです。SwiftWasm SDK 6.1を使用して、Swift 6.1のコードをWebAssemblyに変換し、ブラウザ内のカスタムWASI実装で実行します。
 
 ## ✨ 特徴
