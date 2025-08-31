@@ -224,13 +224,6 @@ export default function SwiftPlayground() {
         </div>
       </div>
 
-      <div className="bg-gray-50 p-2 border-t border-gray-200">
-        <div className="text-xs text-gray-600">
-          <strong>🚀 Real SwiftWasm Playground</strong> - 
-          <a href="https://github.com/swiftwasm/swift" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">SwiftWasm</a>コンパイラ（Swift 6.1）でWebAssemblyにコンパイル・実行
-        </div>
-      </div>
-
       {/* デバッグ情報ポップアップ */}
       {showDebugInfo && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
