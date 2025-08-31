@@ -80,7 +80,7 @@ let message = greeting + ", " + name + "の世界へようこそ！"
 print(message)
 
 // 文字列の詳細操作
-let text = "SwiftでWebAssemblyプログラミング"
+let text = "Swift で WebAssembly プログラミング"
 print("文字数: \\(text.count)")
 print("大文字: \\(text.uppercased())")
 
