@@ -471,5 +471,21 @@ func gcd(_ a: Int, _ b: Int) -> Int {
 let num1 = 48
 let num2 = 18
 print("\\(num1)と\\(num2)の最大公約数: \\(gcd(num1, num2))")`
+  },
+  {
+    name: '標準入力の使用',
+    code: `// 標準入力から名前を読み取る
+print("名前を入力してください:")
+let name = readLine() ?? "匿名"
+print("こんにちは、\\(name)さん！")
+
+// 数値を入力して2倍にする
+print("\\n数値を入力してください:")
+if let input = readLine(), let number = Int(input) {
+    let doubled = number * 2
+    print("入力: \\(number), 2倍: \\(doubled)")
+} else {
+    print("有効な数値が入力されませんでした")
+}`
   }
 ]; 

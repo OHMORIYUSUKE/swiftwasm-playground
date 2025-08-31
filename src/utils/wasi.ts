@@ -82,7 +82,45 @@ export function createWasiImports(setOutput: SetOutputFunction) {
       fd_prestat_get: () => 8, // EBADF: Bad file descriptor
       fd_prestat_dir_name: () => 8, // EBADF: Bad file descriptor
       path_open: () => 76, // ENOTCAPABLE: Insufficient rights
-      fd_read: () => 8, // EBADF: Bad file descriptor
+      fd_read: (fd: number, iovs: number, iovsLen: number, nread: number) => {
+        if (fd === 0) { // stdin
+          const memory = (instance.exports.memory as WebAssembly.Memory);
+          const buffer = new Uint8Array(memory.buffer);
+          
+          // ブラウザのアラートで入力を取得
+          const input = prompt("標準入力:");
+          if (input === null) {
+            // キャンセルされた場合
+            new DataView(memory.buffer).setUint32(nread, 0, true);
+            return 0;
+          }
+          
+          // 改行文字を追加
+          const inputWithNewline = input + '\n';
+          const inputBytes = new TextEncoder().encode(inputWithNewline);
+          
+          let totalRead = 0;
+          for (let i = 0; i < iovsLen; i++) {
+            const iovPtr = iovs + i * 8;
+            const bufPtr = new DataView(memory.buffer).getUint32(iovPtr, true);
+            const bufLen = new DataView(memory.buffer).getUint32(iovPtr + 4, true);
+            
+            // 入力データをメモリにコピー
+            const bytesToCopy = Math.min(bufLen, inputBytes.length - totalRead);
+            if (bytesToCopy > 0) {
+              buffer.set(inputBytes.slice(totalRead, totalRead + bytesToCopy), bufPtr);
+              totalRead += bytesToCopy;
+            }
+            
+            if (totalRead >= inputBytes.length) break;
+          }
+          
+          // nreadにtotalReadを書き込み
+          new DataView(memory.buffer).setUint32(nread, totalRead, true);
+          return 0;
+        }
+        return 8; // EBADF: Bad file descriptor
+      },
       fd_readdir: () => 8, // EBADF: Bad file descriptor
       fd_filestat_get: () => 8, // EBADF: Bad file descriptor
       path_filestat_get: () => 76, // ENOTCAPABLE: Insufficient rights
