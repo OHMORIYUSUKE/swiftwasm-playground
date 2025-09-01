@@ -5,27 +5,44 @@ export function createWasiImports(setOutput: SetOutputFunction) {
   
   return {
     wasi_snapshot_preview1: {
+      // ファイルディスクリプタにデータを書き込む（標準出力・標準エラー出力のエミュレーション）
       fd_write: (fd: number, iovs: number, iovsLen: number, nwritten: number) => {
-        if (fd === 1 || fd === 2) { // stdout or stderr
+        // fd === 1: 標準出力(stdout), fd === 2: 標準エラー出力(stderr)
+        if (fd === 1 || fd === 2) { 
+          // WebAssemblyインスタンスのメモリを取得
           const memory = (instance.exports.memory as WebAssembly.Memory);
           const buffer = new Uint8Array(memory.buffer);
           
-          let totalWritten = 0;
+          let totalWritten = 0; // 実際に書き込まれたバイト数の合計
+          
+          // iovs（iovec配列）をループ処理
+          // iovecは { データのポインタ, データの長さ } の構造体
           for (let i = 0; i < iovsLen; i++) {
+            // 各iovecの位置を計算（8バイトずつ: ポインタ4バイト + 長さ4バイト）
             const iovPtr = iovs + i * 8;
-            const strPtr = new DataView(memory.buffer).getUint32(iovPtr, true);
-            const strLen = new DataView(memory.buffer).getUint32(iovPtr + 4, true);
             
+            // DataViewを使ってメモリから値を読み取り
+            const strPtr = new DataView(memory.buffer).getUint32(iovPtr, true);      // 文字列の開始アドレス
+            const strLen = new DataView(memory.buffer).getUint32(iovPtr + 4, true);  // 文字列の長さ
+            
+            // メモリから文字列データを取得してデコード
             const str = new TextDecoder().decode(buffer.slice(strPtr, strPtr + strLen));
+            
+            // Reactのstate更新関数を使って出力を表示
             setOutput(prev => prev + str);
+            
+            // 書き込まれたバイト数を累積
             totalWritten += strLen;
           }
           
-          // nwrittenにtotalWrittenを書き込み
-          new DataView(memory.buffer).setUint32(nwritten, totalWritten, true);
-          return 0;
+          // nwrittenポインタに実際に書き込まれたバイト数を書き込み
+          // これにより、SwiftWasm側で書き込み結果を確認できる
+          new DataView(memory.buffer).setBigUint64(nwritten, BigInt(totalWritten), true);
+          return 0; // 成功を示す戻り値
         }
-        return -1;
+        
+        // 標準出力・標準エラー出力以外のファイルディスクリプタの場合はエラー
+        return -1; // エラーを示す戻り値
       },
       fd_close: () => 0,
       fd_seek: () => 0,

@@ -22,7 +22,7 @@
 │   Frontend      │                │   API Routes    │
 │                 │ ◄───────────── │                 │
 │ - Monaco Editor │   WASM Binary  │ - /api/compile  │
-│ - WASI Runtime  │   & Metadata   │ - /api/debug    │
+│ - WASI Impl     │   & Metadata   │ - /api/debug    │
 │ - TypeScript    │                │ - /api/wasm/[id]│
 └─────────────────┘                └─────────────────┘
                                          ▲     │
