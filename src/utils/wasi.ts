@@ -37,7 +37,7 @@ export function createWasiImports(setOutput: SetOutputFunction) {
           
           // nwrittenポインタに実際に書き込まれたバイト数を書き込み
           // これにより、SwiftWasm側で書き込み結果を確認できる
-          new DataView(memory.buffer).setBigUint64(nwritten, BigInt(totalWritten), true);
+          new DataView(memory.buffer).setUint32(nwritten, totalWritten, true);
           return 0; // 成功を示す戻り値
         }
         
